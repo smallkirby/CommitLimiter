@@ -110,7 +110,7 @@ func FetchTodaysCommitAll(username string) (res_commits []GithubCommit, err erro
 }
 
 func main() {
-	LIMIT := 20
+	LIMIT := 5
 	commits, err := FetchTodaysCommitAll("smallkirby")
 	if err != nil {
 		log.Fatalln(err)

@@ -18,7 +18,8 @@ fmt:
 
 install: Makefile
 	$(MAKE) release
-	cp ./aip /usr/bin/${BINARY_NAME}
+	sudo cp ./smgithub /usr/bin/${BINARY_NAME}
+	sudo bash -c 'echo -e "SHELL=/bin/sh\n0 * * * *  root /usr/bin/smgithub\n" > /etc/cron.d/smgithub'
 
 
 .PHONY: fmt build install run release
