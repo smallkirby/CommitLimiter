@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -172,22 +171,35 @@ func EnableCommit() error {
 }
 
 func DisalbleCommit() error {
-	f_hosts, err := os.OpenFile("/etc/hosts", os.O_APPEND|os.O_RDWR, 0000)
+	_hosts, err := ioutil.ReadFile("/etc/hosts")
 	if err != nil {
 		return err
 	}
-	defer f_hosts.Close()
+	hosts := strings.Split(string(_hosts), "\n")
 
-	scanner := bufio.NewScanner(f_hosts)
-	for scanner.Scan() {
-		if strings.Contains(scanner.Text(), "smgithub enabled") {
-			fmt.Println("Already enabled.")
-			os.Exit(0)
+	var new_hosts []string
+	status_changed := false
+	for _, host := range hosts {
+		if strings.Contains(host, "smgithub") {
+			if strings.Contains(host, "enabled") {
+				return nil
+			} else if strings.Contains(host, "disabled") {
+				new_hosts = append(new_hosts, "127.0.0.1 github.com # smgithub enabled")
+				status_changed = true
+				continue
+			} else {
+				return errors.New("Broken field of 'smgithub' in /etc/hosts.")
+			}
 		}
+		new_hosts = append(new_hosts, host)
 	}
-
-	f_hosts.WriteString("\n")
-	f_hosts.WriteString("127.0.0.1 github.com # smgithub enabled\n")
+	if !status_changed {
+		new_hosts = append(new_hosts, "\n127.0.0.1 github.com # smgithub enabled")
+	}
+	out := strings.Join(new_hosts, "\n")
+	if err := ioutil.WriteFile("/etc/hosts", []byte(out), 0000); err != nil {
+		return err
+	}
 
 	return nil
 }
