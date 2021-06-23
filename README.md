@@ -1,14 +1,12 @@
-# 🚧 UNDER CONSTRUCTION 🚧
-
-# 進捗メーカー: Prohibit Commits to Github
+# Commit Limiter: Prohibit Commits to Github
 Yes, I have what I have to do.  
 Commits to Github is becoming a way of **Escapism** for me.  
 Ok, prohibit Github, and commit to my life...
 
 ## Installation
 ```install.sh
-git clone https://github.com/smallkirby/ShinchokuMaker.git
-cd ./ShinchokuMaker
+git clone https://github.com/smallkirby/CommitLimiter.git
+cd ./CommitLimiter
 make install
 smgithub --init --username <YOUR USERNAME> --limit <NUM>
 ```
