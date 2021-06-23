@@ -20,6 +20,8 @@ install: Makefile
 	$(MAKE) release
 	sudo cp ./smgithub /usr/bin/${BINARY_NAME}
 	sudo bash -c 'echo -e "SHELL=/bin/sh\n0 * * * *  root /usr/bin/smgithub\n" > /etc/cron.d/smgithub'
+	echo "\033[0;32mTYPE below command to init configuration.\033[0m"
+	echo "\033[0;32m  smgithub --init --username <YOUR USERNAME> --limit <NUM> \033[0m"
 
 
 .PHONY: fmt build install run release

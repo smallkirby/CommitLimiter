@@ -3,11 +3,13 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -108,14 +110,80 @@ func FetchTodaysCommitAll(username string) (res_commits []GithubCommit, err erro
 	return
 }
 
+func createConfig(username string, limit int) error {
+	confdir := "/etc/smgithub"
+	if _, err := os.Stat(confdir); os.IsNotExist(err) {
+		if err := os.Mkdir(confdir, 0755); err != nil {
+			return err
+		}
+		fmt.Printf("Created new config dir at %v\n", confdir)
+	}
+	conffile := "/etc/smgithub/setting.conf"
+	if _, err := os.Stat(conffile); os.IsNotExist(err) {
+		if _, err := os.Create(conffile); err != nil {
+			return err
+		}
+		fmt.Printf("Created new config file at %v\n", conffile)
+	}
+
+	out := strings.Join([]string{
+		fmt.Sprintf("USERNAME=%v", username),
+		fmt.Sprintf("LIMIT=%v", limit),
+	}, "\n")
+
+	if err := ioutil.WriteFile(conffile, []byte(out), 0644); err != nil {
+		return err
+	}
+	return nil
+}
+
+func readConfig() (string, int, error) {
+	data, err := ioutil.ReadFile("/etc/smgithub/setting.conf")
+	if err != nil {
+		return "", 0, err
+	}
+	conf := strings.Split(string(data), "\n")
+	if len(conf) != 2 {
+		return "", 0, errors.New("Broken config file.")
+	}
+
+	username := strings.Split(conf[0], "=")[1]
+	limit, _ := strconv.Atoi(strings.Split(conf[1], "=")[1])
+
+	return username, limit, nil
+}
+
 func main() {
-	LIMIT := 5
-	commits, err := FetchTodaysCommitAll("smallkirby")
+	// CLI interface
+	flag_initialize := flag.Bool("init", false, "Init configuration.")
+	flag_username := flag.String("username", "", "Github username.")
+	flag_limit := flag.Int("limit", 3, "Permitted number of commits per day.")
+	flag.Parse()
+	if *flag_initialize {
+		if *flag_username == "" {
+			fmt.Println("Specify your Github username.")
+			fmt.Printf("USAGE: %v --init --username <YOUR USERNAME> --limit <NUM>\n", os.Args[0])
+			os.Exit(1)
+		}
+		createConfig(*flag_username, *flag_limit)
+		fmt.Println("Successfully initialized.")
+		os.Exit(0)
+	}
+
+	// read config
+	username, limit, err := readConfig()
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	if len(commits) >= LIMIT {
+	// fetch today's commits
+	commits, err := FetchTodaysCommitAll(username)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	// prohibit more commits
+	if len(commits) >= limit {
 		fmt.Println("Over threshold, prohibiting more commits...")
 		if os.Geteuid() != 0 {
 			fmt.Println("Need root permission.")
