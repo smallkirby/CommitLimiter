@@ -165,7 +165,9 @@ func main() {
 			fmt.Printf("USAGE: %v --init --username <YOUR USERNAME> --limit <NUM>\n", os.Args[0])
 			os.Exit(1)
 		}
-		createConfig(*flag_username, *flag_limit)
+    if err := createConfig(*flag_username, *flag_limit); err != nil {
+      log.Fatalln(err)
+    }
 		fmt.Println("Successfully initialized.")
 		os.Exit(0)
 	}
