@@ -10,6 +10,7 @@ build:
 	GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(BINARY_NAME)
 
 release:
+	$(GOCMD) mod tidy -v
 	$(GOBUILD) -ldflags "-s -w" -o $(BINARY_NAME)
 
 fmt: 

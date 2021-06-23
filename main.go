@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -109,7 +110,7 @@ func FetchTodaysCommitAll(username string) (res_commits []GithubCommit, err erro
 }
 
 func main() {
-	LIMIT := 3
+	LIMIT := 20
 	commits, err := FetchTodaysCommitAll("smallkirby")
 	if err != nil {
 		log.Fatalln(err)
@@ -121,28 +122,72 @@ func main() {
 			fmt.Println("Need root permission.")
 			os.Exit(1)
 		}
-
-		f_hosts, err := os.OpenFile("/etc/hosts", os.O_APPEND|os.O_RDWR, 0000)
-		if err != nil {
+		if err := DisalbleCommit(); err != nil {
 			log.Fatalln(err)
 		}
-		defer f_hosts.Close()
-
-		scanner := bufio.NewScanner(f_hosts)
-		for scanner.Scan() {
-			if strings.Contains(scanner.Text(), "smgithub enabled") {
-				fmt.Println("Already enabled.")
-				os.Exit(0)
-			}
-		}
-
-		f_hosts.WriteString("\n")
-		f_hosts.WriteString("# smgithub enabled\n")
-		f_hosts.WriteString("127.0.0.1 github.com\n")
-
 		fmt.Println("Prohibited github.com.")
 	} else {
-		fmt.Println("OK")
+		fmt.Println("Allowing commits to github.com...")
+
+		if os.Geteuid() != 0 {
+			fmt.Println("Need root permission.")
+			os.Exit(1)
+		}
+
+		if err := EnableCommit(); err != nil {
+			log.Fatalln(err)
+		}
+		fmt.Println("Allowed github.com.")
 		os.Exit(0)
 	}
+}
+
+func EnableCommit() error {
+	_hosts, err := ioutil.ReadFile("/etc/hosts")
+	if err != nil {
+		return err
+	}
+	hosts := strings.Split(string(_hosts), "\n")
+
+	var new_hosts []string
+	for _, host := range hosts {
+		if strings.Contains(host, "smgithub") {
+			if strings.Contains(host, "enabled") {
+				new_hosts = append(new_hosts, "# 127.0.0.1 github.com # smgithub disabled")
+				continue
+			} else if strings.Contains(host, "disabled") {
+				return nil
+			} else {
+				return errors.New("Broken field of 'smgithub' in /etc/hosts.")
+			}
+		}
+		new_hosts = append(new_hosts, host)
+	}
+	out := strings.Join(new_hosts, "\n")
+	if err := ioutil.WriteFile("/etc/hosts", []byte(out), 0000); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func DisalbleCommit() error {
+	f_hosts, err := os.OpenFile("/etc/hosts", os.O_APPEND|os.O_RDWR, 0000)
+	if err != nil {
+		return err
+	}
+	defer f_hosts.Close()
+
+	scanner := bufio.NewScanner(f_hosts)
+	for scanner.Scan() {
+		if strings.Contains(scanner.Text(), "smgithub enabled") {
+			fmt.Println("Already enabled.")
+			os.Exit(0)
+		}
+	}
+
+	f_hosts.WriteString("\n")
+	f_hosts.WriteString("127.0.0.1 github.com # smgithub enabled\n")
+
+	return nil
 }
