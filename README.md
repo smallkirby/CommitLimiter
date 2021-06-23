@@ -34,4 +34,4 @@ smgithub --init --username <YOUR USERNAME> --limit <NUM>
 
 ## Warnings
 
-- This program is intended to be run as root as crontask, and it overwrites `/etc/hosts` directly without any security and sync issues. Be aware.
+- This program is intended to be run as root as crontask, and it overwrites `/etc/hosts` directly without any security and sync responsibilities. Be aware.
